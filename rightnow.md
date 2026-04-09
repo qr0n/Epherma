@@ -1,52 +1,41 @@
 # Ephemera — Where We Are Right Now
 
-## What This Project Is
-A Minecraft AI orchestration system. A world that reads its inhabitant and builds itself in response. 
+## What's Working
 
-- **Element 1:** Fabric mod (Minecraft 1.20.1) — rich telemetry (speed, health delta, actions), command execution.
-- **Element 2:** Python middleware server (FastAPI) — WebSocket bridge.
-- **Element 3:** Two-tier AI orchestrator — Director (Narrative Arc) + Builder (Code Generation).
-- **Element 4:** Lore & Artifact Layer — Signs, Books, and Ghost Entities integrated.
+The full pipeline is live and tested end-to-end:
 
----
-
-## The Architecture
-
-```
-Minecraft (Fabric mod)
-    │  WebSocket — telemetry out, commands in
-    ▼
-ephemera-server/main.py  (FastAPI middleware)
-    │  GET /state     — poll latest telemetry
-    │  POST /command  — forward any JSON to mod
-    ▼
-orchestrator.py
-    ├── Director LLM  — Plans sequences of 10 rooms with descriptive briefs and artifacts.
-    └── Builder LLM   — Generates raw Python procedural functions to build the spaces.
-```
+- **World Soul generation** — DecompositionSearch picks a real obscure subject, researches it across 5–7 branches, synthesizes an 800–1200 word narrative bible. Every world is genuinely unique.
+- **Act treatment + scene briefs** — UltraDirector reads the soul and player telemetry, writes a narrative arc, LOCUS translates it into 5-room scene batches with deliberate size_class pacing.
+- **Procedural geometry** — Builder LLM generates live Python code per room. Rooms clear their bounding box first, build additively, and leave matched corridor entrances.
+- **Content layer** — Journals (written books on lecterns), named artifacts in item frames, custom NPCs, and ambient sounds — all contextualised by the World Soul.
+- **Static world grid** — Rooms on absolute X-axis coordinates, no clipping, no relative offsets. First room starts adjacent to spawn.
+- **Corridor system** — Pre-built stone corridors connect rooms. Entrance dimensions are passed to the Builder so openings match exactly.
+- **Particle triggers** — end_rod rings mark unvisited room entrances. Visible from the corridor as a beacon.
+- **Per-world state** — State files keyed on Minecraft world seed. Different worlds don't interfere.
+- **Key rotation** — RotatingClient cycles across multiple Gemini API keys on every call.
+- **Full logging** — Every LLM call logged with model, latency, char count. Rate limits, build errors, cleanup events all surfaced. Output mirrors to `ephemera.log`.
 
 ---
 
-## Recent Breakthroughs
-- **Narrative Arc Implementation:** The Director now follows a 3-Act structure (Sterile -> Glitch -> Collapse).
-- **Environmental Storytelling:** Support for rare Artifacts (Signs, Written Books on Lecterns) and Ghost sightings.
-- **Seamless Connectivity:** Fixed! The Orchestrator now builds a continuous sequence of rooms connected by sealed corridors along the X-axis.
-- **Rich Telemetry:** Mod now tracks sprinting, walking, mining, combat, and damage states.
+## Current Configuration
+
+- **Model:** `gemini-3.1-flash-lite-preview` (globally — dialed down to avoid rate limits)
+- **Rate limit handling:** Exponential backoff 30s → 60s → 120s. 2s inter-call delay.
+- **Pruning:** Disabled. All builds persist in the world permanently.
 
 ---
-
-## Live Test Results
-- Full pipeline is airtight.
-- Minecraft is successfully rendering complex, AI-coded geometry on the fly.
-- Signs and Books are correctly placing text without formatting errors.
-- Player connectivity is stable.
 
 ## Known Limitations
-- Builder occasionally generates invalid block IDs (silently ignored by Minecraft).
-- No persistence between separate world sessions.
-- Environmental "cleanup" (deleting rooms behind the player) not yet implemented.
+
+- Flash-lite produces noticeably simpler room geometry and less atmospheric World Souls than a pro model would. The architecture is correct — the output quality is model-budget constrained.
+- `_research_branches` runs sequentially (5–7 deep model calls one after another). First-world generation takes several minutes.
+- Builder-generated code is `exec()`'d at runtime. Compilation errors fall back to a cobblestone corridor.
 
 ---
 
-## Next
-Refining the Act 3 "Collapse" aesthetics and exploring Element 4 (The Global ARG layer).
+## What's Next
+
+- **Phase 6 (ARG layer):** A global layer where discoveries in one player's world leave traces in others. Toynbee Tiles energy.
+- Upgrade to pro model with real budget — the whole pipeline was designed for it.
+- Parallelize `_research_branches` to cut world generation time.
+- Improve Builder prompt reliability for cathedral/void-scale geometry.
